@@ -53,7 +53,7 @@ namespace TextEditor
 		/// <summary>
 		/// 行包含的段
 		/// </summary>
-		public Block[] Segments
+		public Block[] Blocks
 		{
 			get { return _lstSegment.ToArray(); }
 		}
@@ -81,7 +81,7 @@ namespace TextEditor
 			get
 			{
 				int iLength = 0;
-				foreach (Block seg in Segments)
+				foreach (Block seg in Blocks)
 				{
 					if(!string.IsNullOrEmpty(seg.Text))
 					{
@@ -170,9 +170,9 @@ namespace TextEditor
 		public Size CalcSize(Graphics g, Font f, TextBoxControl editor)
 		{
 			Size size = new Size();
-			foreach (Block seg in Segments)
+			foreach (Block seg in Blocks)
 			{
-				switch (seg.SegType)
+				switch (seg.BlockType)
 				{
 					case BlockType.Text:
 						{
@@ -183,7 +183,6 @@ namespace TextEditor
 						size.Width += editor.SpaceWidth * editor.TabIndent;
 						break;
 					case BlockType.Space:
-					case BlockType.AttrSplit:
 						size.Width += editor.SpaceWidth;
 						break;
 					default:
@@ -224,7 +223,7 @@ namespace TextEditor
 			}
 
 			// 绘制元素
-			foreach (Block seg in Segments)
+			foreach (Block seg in Blocks)
 			{
 				if (ptTemp.Y + editor.FontHeight > rcClip.Top && ptTemp.Y < rcClip.Bottom && ptTemp.X < rcClip.Right)
 				{

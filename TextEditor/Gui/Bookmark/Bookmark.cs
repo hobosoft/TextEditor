@@ -42,8 +42,8 @@ namespace TextEditor.Document
 		void CreateAnchor()
 		{
 			if (_control != null) {
-				Line line = _control.GetLine(Math.Max(0, Math.Min(location.Line, _control.LineCount - 1)));
-				anchor = line.CreateAnchor(Math.Max(0, Math.Min(location.Column, line.Length)));
+				Paragraph pg = _control.GetParagraph(Math.Max(0, Math.Min(location.Line, _control.LineCount - 1)));
+				anchor = pg.CreateAnchor(Math.Max(0, Math.Min(location.Column, pg.Length)));
 				// after insertion: keep bookmarks after the initial whitespace (see DefaultFormattingStrategy.SmartReplaceLine)
 				anchor.MovementType = AnchorMovementType.AfterInsertion;
 				anchor.Deleted += AnchorDeleted;

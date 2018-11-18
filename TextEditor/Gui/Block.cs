@@ -28,7 +28,13 @@ namespace TextEditor
 			set;
 		}
 
-		public virtual BlockType SegType
+		public virtual BlockType BlockType
+		{
+			get;
+			set;
+		}
+
+		public virtual Color Color
 		{
 			get;
 			set;
@@ -42,7 +48,8 @@ namespace TextEditor
 		public Block(BlockType type, string text)
 		{
 			Text = text;
-			SegType = type;
+			BlockType = type;
+			Color = SystemColors.WindowText;
 		}
 
 		public Block(BlockType type)
@@ -70,11 +77,11 @@ namespace TextEditor
 			// 若未被选中的状态(起始位置等于结束位置时)，则直接按照原来的逻辑进行计算
 			if (start.X == end.X && start.Y == end.Y)
 			{
-				if (SegType == BlockType.Space || SegType == BlockType.AttrSplit)
+				if (BlockType == BlockType.Space)
 				{
 					ptTemp.X += editor.SpaceWidth;
 				}
-				else if (SegType == BlockType.Tab)
+				else if (BlockType == BlockType.Tab)
 				{
 					ptTemp.X += editor.SpaceWidth * Length;
 				}
@@ -82,7 +89,7 @@ namespace TextEditor
 				{
 					int iWidth = editor.DrawHelper.MeasureStringWidth(g, Text, f);
 
-					editor.DrawHelper.DrawString(g, Text, f, GetSegmentColor(editor), ptTemp);
+					editor.DrawHelper.DrawString(g, Text, f, Color, ptTemp);
 					ptTemp.X += iWidth;
 				}
 				return;
@@ -100,11 +107,11 @@ namespace TextEditor
 			// 若元素的类型为空格或者是Tab键时，计算它们所占的宽度
 
 			int wordWidth = 0;
-			if (SegType == BlockType.Space || SegType == BlockType.AttrSplit)
+			if (BlockType == BlockType.Space)
 			{
 				wordWidth = editor.SpaceWidth;
 			}
-			else if (SegType == BlockType.Tab)
+			else if (BlockType == BlockType.Tab)
 			{
 				wordWidth = editor.SpaceWidth * Length;
 			}
@@ -196,7 +203,7 @@ namespace TextEditor
 				}
 			}
 			Brush selectionBackgroundBrush = new SolidBrush(SystemColors.Highlight);
-			if (SegType == BlockType.Space || SegType == BlockType.AttrSplit)
+			if (BlockType == BlockType.Space)
 			{
 				if (isSelected)
 				{
@@ -204,7 +211,7 @@ namespace TextEditor
 				}
 				ptTemp.X += editor.SpaceWidth;
 			}
-			else if (SegType == BlockType.Tab)
+			else if (BlockType == BlockType.Tab)
 			{
 				if (isSelected)
 				{
@@ -270,7 +277,7 @@ namespace TextEditor
 		/// </summary>
 		public Color GetSegmentColor(TextBoxControl editor) 
 		{
-			 switch(SegType)
+			 switch(BlockType)
 			 {
 				 //case SegType.LeftSign:
 				 //case SegType.RightSign:
@@ -300,127 +307,12 @@ namespace TextEditor
 	}
 
 
-	//public class NodeNameSegment : LineSegment
-	//{
-	//	public NodeNameSegment()
-	//		: base()
-	//	{
-	//		SegType = SegType.NodeName;
-	//	}
-
-	//	public override string Text
-	//	{
-	//		get
-	//		{
-	//			if (Line != null && Line.Node != null)
-	//				return Line.Node.Label;
-	//			return base.Text;
-	//		}
-	//		set
-	//		{
-	//			base.Text = value;
-
-	//			if (Line != null && Line.Node != null)
-	//				Line.Node.Name = value;
-	//		}
-	//	}
-
-	//	public override int Length
-	//	{
-	//		get { return Text.Length; }
-	//	}
-
-	//	public override SegType SegType
-	//	{
-	//		get { return SegType.NodeName; }
-	//		set { ;}
-	//	}
-	//}
-
-	//public class AttrNameSegment : LineSegment 
-	//{
-	//	/// <summary>
-	//	/// 所属属性
-	//	/// </summary>
-	//	private VXmlAttribute mAttribute;
-
-	//	public VXmlAttribute Attribute 
-	//	{
-	//		get { return mAttribute; }
-	//	}
-
-	//	public AttrNameSegment(VXmlAttribute attr)
-	//		: base() 
-	//	{
-	//		SegType = SegType.AttrName;
-	//		mAttribute = attr;
-	//	}
-
-	//	public override string Text
-	//	{
-	//		get
-	//		{
-	//			if (mAttribute != null)
-	//				return mAttribute.Label;
-	//			return base.Text;
-	//		}
-	//		set
-	//		{
-	//			base.Text = value;
-	//			if (mAttribute != null)
-	//				mAttribute.Name = value;
-	//		}
-	//	}
-
-	//	public override int Length
-	//	{
-	//		get { return Text.Length; }
-	//	}
-
-	//	public override SegType SegType
-	//	{
-	//		get { return SegType.AttrName; }
-	//		set { ;}
-	//	}
-	//}
-
-	//public class AttrValueSegment : LineSegment
-	//{
-	//	/// <summary>
-	//	/// 所属属性
-	//	/// </summary>
-	//	private VXmlAttribute mAttribute;
-
-	//	public VXmlAttribute Attribute
-	//	{
-	//		get { return mAttribute; }
-	//	}
-
-	//	public AttrValueSegment(VXmlAttribute attr)
-	//		: base()
-	//	{
-	//		SegType = SegType.AttrValue;
-	//		mAttribute = attr;
-	//	}
-
-	//	public override int Length
-	//	{
-	//		get { return Text.Length; }
-	//	}
-
-	//	public override SegType SegType
-	//	{
-	//		get { return SegType.AttrValue; }
-	//		set { ;}
-	//	}
-	//}
-
 	public class SpaceSegment : Block
 	{
 		public SpaceSegment() : base()
 		{
 			Text = " ";
-			SegType = BlockType.Space;
+			BlockType = BlockType.Space;
 		}
 
 		public override string Text
@@ -434,7 +326,7 @@ namespace TextEditor
 			get { return 1; }
 		}
 
-		public override BlockType SegType
+		public override BlockType BlockType
 		{
 			get { return BlockType.Space; }
 			set { ;}
@@ -446,7 +338,7 @@ namespace TextEditor
 		public TabSegment() : base()
 		{
 			Text = "\t";
-			SegType = BlockType.Tab;
+			BlockType = BlockType.Tab;
 		}
 
 		public override string Text
@@ -466,63 +358,9 @@ namespace TextEditor
 		}
 
 
-		public override BlockType SegType
+		public override BlockType BlockType
 		{
 			get { return BlockType.Tab; }
-			set { ;}
-		}
-	}
-
-	public class EqualSegment : Block
-	{
-		public EqualSegment() : base()
-		{
-			Text = "=";
-			SegType = BlockType.Equal;
-		}
-
-		public override string Text
-		{
-			get { return "="; }
-			set { ;}
-		}
-
-		public override int Length
-		{
-			get { return 1; }
-		}
-
-
-		public override BlockType SegType
-		{
-			get { return BlockType.Equal; }
-			set { ;}
-		}
-	}
-
-	public class QuotationSegment : Block
-	{
-		public QuotationSegment() : base()
-		{
-			Text = "\"";
-			SegType = BlockType.Quotation;
-		}
-
-		public override string Text
-		{
-			get { return "\""; }
-			set { ;}
-		}
-
-		public override int Length
-		{
-			get { return 1; }
-		}
-
-
-		public override BlockType SegType
-		{
-			get { return BlockType.Quotation; }
 			set { ;}
 		}
 	}
@@ -533,7 +371,7 @@ namespace TextEditor
 			: base()
 		{
 			Text = "\n";
-			SegType = BlockType.Enter;
+			BlockType = BlockType.Enter;
 		}
 
 		public override string Text
@@ -548,7 +386,7 @@ namespace TextEditor
 		}
 
 
-		public override BlockType SegType
+		public override BlockType BlockType
 		{
 			get { return BlockType.Enter; }
 			set { ;}
@@ -560,6 +398,7 @@ namespace TextEditor
 		Text,		// 文本
 		Tab,		// Tab键
 		Space,		// 空格
-		Symbol,		// 符号
+		Symbol,     // 符号
+		Enter,		// 回车
 	}
 }

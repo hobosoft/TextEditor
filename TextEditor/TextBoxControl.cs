@@ -49,9 +49,9 @@ namespace TextEditor
 		private IColorStrategy m_colorStrategy = new XmlColorStrategy();
 
 		/// <summary>
-		/// 行集合
+		/// 段落集合
 		/// </summary>
-		private List<Line> m_lstLine;// = new List<Line>();
+		private List<Paragraph> m_lstParagraph;// = new List<Line>();
 
 
 		/// <summary>
@@ -340,8 +340,8 @@ namespace TextEditor
 			base.AutoScroll = true;
 			timer.Tick += timer_Tick;
 
-			m_lstLine = new List<Line>();
-			m_lstLine.Add(new Line());
+			m_lstParagraph = new List<Paragraph>();
+			m_lstParagraph.Add(new Paragraph());
 
 			m_caret = new Caret(this);
 			m_caret.PositionChanged += new EventHandler(SearchMatchingBracket);
@@ -384,7 +384,7 @@ namespace TextEditor
 			NeedRecalc = true;
 
 			Caret.Position = new TextLocation(0,1);
-			m_lstLine.Clear();
+			m_lstParagraph.Clear();
 			this.Invalidate();
 		}
 
@@ -486,17 +486,17 @@ namespace TextEditor
 			g.SetClip(rcClip);
 
 
-			if (m_lstLine.Count > 0)
+			if (m_lstParagraph.Count > 0)
 			{
 				Point ptPos = new Point(this.Padding.Left + this.Margin.Left - HorizontalScroll.Value, this.Padding.Top + this.Margin.Top - VerticalScroll.Value);
 
 				ptPos.X += LineNumBarWidth;
 
-				foreach (Line line in m_lstLine)
+				foreach (Paragraph paragraph in m_lstParagraph)
 				{
-					line.Draw(this, g, Font, ptPos);
+					paragraph.Draw(this, g, Font, ptPos);
 
-					ptPos.Y += line.Height;
+					ptPos.Y = (int)(ptPos.Y + paragraph.Height + 0.5f);
 				}
 				//if (m_xmlDocument == null)
 				//	return;
@@ -722,7 +722,7 @@ namespace TextEditor
 				Caret.Position = SelectionManager.SelectionCollection[0].StartPosition;
 				SelectionManager.RemoveSelectedText();
 			}
-			Line caretLine = GetLine(Caret.Line);
+			Paragraph caretLine = GetParagraph(Caret.Line);
 			int dc = Caret.Column;
 			InsertOperate operate = InsertOperate.None;
 			Block segment = null;
@@ -910,7 +910,7 @@ namespace TextEditor
 		/// </summary>
 		public int CalColumnNumber(int lineNum, int ptX) 
 		{
-			Line line = GetLine(lineNum);
+			Paragraph line = GetParagraph(lineNum);
 			int drawPos = 0;
 			int colNumber = 0;
 
@@ -921,10 +921,10 @@ namespace TextEditor
 
 			using (Graphics g = this.CreateGraphics())
 			{
-				foreach (Block segment in line.Segments)
+				foreach (Block segment in line.Blocks)
 				{
 					int newdrawPos = 0;
-					if (segment.SegType == BlockType.Space || segment.SegType == BlockType.AttrSplit)
+					if (segment.BlockType == BlockType.Space)
 					{
 						newdrawPos = drawPos + SpaceWidth;
 						if (newdrawPos >= ptX)
@@ -933,7 +933,7 @@ namespace TextEditor
 						}
 						colNumber += 1;
 					}
-					else if (segment.SegType == BlockType.Tab)
+					else if (segment.BlockType == BlockType.Tab)
 					{
 						newdrawPos = drawPos + SpaceWidth * segment.Length;
 						if (newdrawPos >= ptX)
@@ -978,7 +978,7 @@ namespace TextEditor
 		/// </summary>
 		public int CalColumnLocation(int lineNum, int colNum) 
 		{
-			Line line = GetLine(lineNum);
+			Paragraph line = GetParagraph(lineNum);
 			int drawPos = 0;
 			int number = 0;
 
@@ -989,17 +989,17 @@ namespace TextEditor
 
 			using (Graphics g = this.CreateGraphics())
 			{
-				foreach(Block segment in line.Segments)
+				foreach(Block segment in line.Blocks)
 				{
 					int newdrawPos = 0;
-					if (segment.SegType == BlockType.Space || segment.SegType == BlockType.AttrSplit)
+					if (segment.BlockType == BlockType.Space)
 					{
 						newdrawPos = drawPos + SpaceWidth;
 						number += 1;
 						if (number == colNum)
 							return newdrawPos;
 					}
-					else if (segment.SegType == BlockType.Tab)
+					else if (segment.BlockType == BlockType.Tab)
 					{
 						newdrawPos = drawPos + SpaceWidth * segment.Length;
 						number += 4;
@@ -1045,7 +1045,7 @@ namespace TextEditor
 		public List<TextLocation> GetDoubleClickSelectSegmentInfo(int lineNum, int colNum) 
 		{
 			List<TextLocation> locationList = new List<TextLocation>();
-			Line line = GetLine(lineNum);
+			Paragraph line = GetParagraph(lineNum);
 			int ptX = CalColumnLocation(lineNum, colNum);
 			int drawPos = 0;
 			int colNumber = 0;
@@ -1055,10 +1055,10 @@ namespace TextEditor
 
 			using (Graphics g = this.CreateGraphics())
 			{
-				foreach (Block segment in line.Segments)
+				foreach (Block segment in line.Blocks)
 				{
 					int newdrawPos = 0;
-					if (segment.SegType == BlockType.Space || segment.SegType == BlockType.AttrSplit)
+					if (segment.BlockType == BlockType.Space)
 					{
 						newdrawPos = drawPos + SpaceWidth;
 
@@ -1070,7 +1070,7 @@ namespace TextEditor
 						}
 						colNumber += 1;
 					}
-					else if (segment.SegType == BlockType.Tab)
+					else if (segment.BlockType == BlockType.Tab)
 					{
 						newdrawPos = drawPos + SpaceWidth * segment.Length;
 						if (newdrawPos >= ptX)
@@ -1110,17 +1110,17 @@ namespace TextEditor
 		/// </summary>
 		public TextLocation GetLineHomeInfo(int lineNum) 
 		{
-			Line line = GetLine(lineNum);
+			Paragraph line = GetParagraph(lineNum);
 			int colNumber = 0;
 			if (line == null)
 				return TextLocation.Empty;
-			foreach(Block segment in line.Segments)
+			foreach(Block segment in line.Blocks)
 			{
-				if (segment.SegType == BlockType.Space)
+				if (segment.BlockType == BlockType.Space)
 				{
 					colNumber += 1;
 				}
-				else if (segment.SegType == BlockType.Tab)
+				else if (segment.BlockType == BlockType.Tab)
 				{
 					colNumber += 4;
 				}
@@ -1139,7 +1139,7 @@ namespace TextEditor
 		public int GetMovePositionByKey(bool isLeft) 
 		{
 			int location = CalColumnLocation(Caret.Position.Y ,Caret.Position.X);
-			Line line = GetLine(Caret.Position.Y);
+			Paragraph line = GetParagraph(Caret.Position.Y);
 			int drawPos = 0;
 
 			if (line == null)
@@ -1148,10 +1148,10 @@ namespace TextEditor
 			bool isGetLocation = false;
 			using (Graphics g = this.CreateGraphics())
 			{
-				foreach (Block segment in line.Segments)
+				foreach (Block segment in line.Blocks)
 				{
 					int newdrawPos = 0;
-					if (segment.SegType == BlockType.Space || segment.SegType == BlockType.AttrSplit)
+					if (segment.BlockType == BlockType.Space)
 					{
 						newdrawPos = drawPos + SpaceWidth;
 						if (isGetLocation)
@@ -1172,7 +1172,7 @@ namespace TextEditor
 						}
 
 					}
-					else if (segment.SegType == BlockType.Tab)
+					else if (segment.BlockType == BlockType.Tab)
 					{
 						newdrawPos = drawPos + SpaceWidth * segment.Length;
 						if (isGetLocation)
@@ -1242,7 +1242,7 @@ namespace TextEditor
 		/// </summary>
 		public int GetLineWidth(int lineNumber) 
 		{
-			Line line = GetLine(lineNumber);
+			Paragraph line = GetParagraph(lineNumber);
 			int drawPos = 0;
 			if(line == null)
 			{
@@ -1251,13 +1251,13 @@ namespace TextEditor
 
 			using (Graphics g = this.CreateGraphics())
 			{
-				foreach (Block segment in line.Segments)
+				foreach (Block segment in line.Blocks)
 				{
-					if (segment.SegType == BlockType.Space || segment.SegType == BlockType.AttrSplit)
+					if (segment.BlockType == BlockType.Space)
 					{
 						drawPos += SpaceWidth;
 					}
-					else if (segment.SegType == BlockType.Tab)
+					else if (segment.BlockType == BlockType.Tab)
 					{
 						drawPos += SpaceWidth * segment.Length;
 					}
@@ -1331,16 +1331,16 @@ namespace TextEditor
 			Graphics g = this.CreateGraphics();
 			try
 			{
-				Size size = CalcSize(g, Font);
+				SizeF size = CalcSize(g, Font);
 
 				//Size size = m_xmlDocument.Size;
 
 				NeedRecalc = false;
 				//adjust AutoScrollMinSize
-				int minWidth = size.Width + 2 + Padding.Left + Padding.Right;// + NumberWidth;
+				int minWidth = (int)(size.Width + 2 + Padding.Left + Padding.Right);// + NumberWidth;
 				minWidth += LineNumBarWidth;
 
-				int minHeight = size.Height + 2 + Padding.Top + Padding.Bottom;
+				int minHeight = (int)(size.Height + 2 + Padding.Top + Padding.Bottom);
 				AutoScrollMinSize = new Size(minWidth, minHeight);
 			}
 			finally
@@ -1353,16 +1353,15 @@ namespace TextEditor
 		/// <summary>
 		/// 计算大小
 		/// </summary>
-		public Size CalcSize(Graphics g, Font f)
+		public SizeF CalcSize(Graphics g, Font f)
 		{
-			Size size = new Size();
+			SizeF size = new SizeF();
 
-			int iLineNumber = 1;
-			foreach (Line line in m_lstLine)
+			foreach (Paragraph paragraph in m_lstParagraph)
 			{
 				//if (line.State != VisibleState.Hidden)
 				{
-					Size lineSize = line.CalcSize(g, f, this);
+					SizeF lineSize = paragraph.CalcSize(g, f, this);
 
 					size.Height += lineSize.Height;
 					if (size.Width < lineSize.Width)
@@ -1370,17 +1369,15 @@ namespace TextEditor
 						size.Width = lineSize.Width;
 					}
 				}
-				line.SetLineNumber(iLineNumber);
-				iLineNumber++;
 			}
 
-			int minWidth = size.Width + 2 + Padding.Left + Padding.Right;// + NumberWidth;
+			float minWidth = size.Width + 2 + Padding.Left + Padding.Right;// + NumberWidth;
 			minWidth += LineNumBarWidth;
 
-			int minHeight = size.Height + 2 + Padding.Top + Padding.Bottom;
-			AutoScrollMinSize = new Size(minWidth, minHeight);
+			float minHeight = size.Height + 2 + Padding.Top + Padding.Bottom;
 
-			//TextSize = size;
+			SizeF minSize = new SizeF(minWidth, minHeight);
+			AutoScrollMinSize = minSize.ToSize();// new Size((int)Math.Round(minWidth), (int)Math.Round(minHeight));
 
 			return size;
 		}
@@ -1520,7 +1517,7 @@ namespace TextEditor
 		/// </summary>
 		public int LineCount
 		{
-			get { return m_lstLine.Count; }
+			get { return m_lstParagraph.Count; }
 			private set {; }
 		}
 
@@ -1535,24 +1532,36 @@ namespace TextEditor
 		/// <summary>
 		/// 通过行号获取行
 		/// </summary>
-		public Line GetLine(int line)
+		public Paragraph GetParagraph(int line)
 		{
-			if (m_lstLine.Count >= line && line > 0)
+			int iLineCount = 0;
+
+			foreach (Paragraph pg in m_lstParagraph)
 			{
-				return m_lstLine[line - 1];
+				if (iLineCount < line && (iLineCount + pg.LineCount) >= line)
+				{
+					int index = (line - iLineCount);
+					return pg;//.Lines[index];
+				}
+
+				iLineCount += pg.LineCount;
 			}
+			//if (m_lstParagraph.Count >= line && line > 0)
+			//{
+			//	return m_lstParagraph[line - 1];
+			//}
 			return null;
 		}
 
-		public bool InsertLine(int index, Line line)
+		public bool InsertParagraph(int index, Paragraph pg)
 		{
-			if (m_lstLine.Contains(line))
+			if (m_lstParagraph.Contains(pg))
 				return false;
 
-			if (index >= m_lstLine.Count)
-				m_lstLine.Add(line);
+			if (index >= m_lstParagraph.Count)
+				m_lstParagraph.Add(pg);
 			else
-				m_lstLine.Insert(index, line);
+				m_lstParagraph.Insert(index, pg);
 
 			OnEditorChanged(new EditorEventArgs(this));
 
@@ -1565,16 +1574,16 @@ namespace TextEditor
 		/// <summary>
 		/// 在当前行下插入新行
 		/// </summary>
-		public Line InsertLine(Line line, ref int caretCol)
+		public Paragraph InsertParagraph(Paragraph pg, ref int caretCol)
 		{
-			Line newLine = null;
-			if (m_lstLine.Contains(line))
+			Paragraph newPg = null;
+			if (m_lstParagraph.Contains(pg))
 			{
-				newLine = new Line();
-				int index = m_lstLine.IndexOf(line);
-				this.InsertLine(index + 1, newLine);
+				newPg = new Paragraph();
+				int index = m_lstParagraph.IndexOf(pg);
+				this.InsertParagraph(index + 1, newPg);
 			}
-			return newLine;
+			return newPg;
 		}
 
 		void OnEditorChanged(EditorEventArgs e)

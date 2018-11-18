@@ -67,9 +67,9 @@ namespace TextEditor.Actions
 		public override void Execute(TextBoxControl editor)
 		{
 			int iLine = editor.LineCount;
-			Line line = editor.GetLine(iLine);
+			Paragraph pg = editor.GetParagraph(iLine);
 
-			TextLocation endPos = new TextLocation(line.Length, iLine);
+			TextLocation endPos = new TextLocation(pg.Length, iLine);
 			if (editor.Caret.Position != endPos)
 			{
 				editor.Caret.Position = endPos;

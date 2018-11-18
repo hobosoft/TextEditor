@@ -37,7 +37,7 @@ namespace TextEditor.Actions
 				{
 					editor.BeginUpdate();
 
-					Line line = editor.GetLine(editor.Caret.Line);
+					Paragraph line = editor.GetParagraph(editor.Caret.Line);
 					if (line != null && line.Remove(editor.Caret.Column - 1, 1))
 						editor.Caret.Column -= 1;
 
@@ -82,9 +82,9 @@ namespace TextEditor.Actions
 				if (editor.Caret.Line > 0 && editor.Caret.Column > 0 && !editor.ReadOnly)
 				{
 					editor.BeginUpdate();
-					Line line = editor.GetLine(editor.Caret.Line);
-					if (line != null)
-						line.Remove(editor.Caret.Column, 1);
+					Paragraph pg = editor.GetParagraph(editor.Caret.Line);
+					if (pg != null)
+						pg.Remove(editor.Caret.Column, 1);
 
 					editor.EndUpdate();
 				}
@@ -122,35 +122,35 @@ namespace TextEditor.Actions
 				bool isEnd = false;
 				bool isAllSpace = false;
 				int curLineNr = editor.Caret.Line;
-				Line line = editor.GetLine(curLineNr);
-				line.CheckIsIncludeVaildSegment(ref isEnd, ref isAllSpace);
+				Paragraph pg = editor.GetParagraph(curLineNr);
+				pg.CheckIsIncludeVaildSegment(ref isEnd, ref isAllSpace);
 				int insertLocation = 0;
 
-				Block segment = line.GetLineSegmentBeforeCaret(editor.Caret.Column, ref insertLocation);
+				Block segment = pg.GetLineSegmentBeforeCaret(editor.Caret.Column, ref insertLocation);
 				if (segment != null)
 				{
 					List<string> spitList = new List<string>();
-					spitList = line.SpitTextSegmentByCaret(editor.Caret.Column);
+					spitList = pg.SpitTextSegmentByCaret(editor.Caret.Column);
 					// 当鼠标光标落在文本元素后时
 					if(spitList.Count == 2 && (string.IsNullOrEmpty(spitList[0]) || string.IsNullOrEmpty(spitList[1])))
 					{
 						int caretCol = 0;
-						Line lineNew = editor.InsertLine(line, ref caretCol);
-						if (lineNew != null)
+						Paragraph newPG = editor.InsertParagraph(pg, ref caretCol);
+						if (newPG != null)
 						{
-							int index = line.Segments.ToList().IndexOf(segment);
+							int index = pg.Blocks.ToList().IndexOf(segment);
 							if (string.IsNullOrEmpty(spitList[0]))
 								index  -= 1;
-							List<Block> deleteSeg = new List<Block>();
-							for (int i = 0; i < line.Segments.Length; i++)
+							List<Block> lstDelBlock = new List<Block>();
+							for (int i = 0; i < pg.Blocks.Length; i++)
 							{
 								if (i > index)
 								{
-									deleteSeg.Add(line.Segments[i]);
+									lstDelBlock.Add(pg.Blocks[i]);
 								}
 							}
-							line.Remove(deleteSeg);
-							lineNew.AddSegment(deleteSeg);
+							pg.Remove(lstDelBlock);
+							newPG.AddSegment(lstDelBlock.ToArray());
 							editor.Caret.Position = new TextLocation(caretCol, editor.Caret.Line + 1);
 							editor.Caret.UpdateCaretPosition();
 						}
@@ -158,34 +158,34 @@ namespace TextEditor.Actions
 					else if(spitList.Count == 2 && !string.IsNullOrEmpty(spitList[0]) && !string.IsNullOrEmpty(spitList[1]))
 					{
 						int caretCol = 0;
-						Line lineNew = editor.InsertLine(line, ref caretCol);
-						if(lineNew != null)
+						Paragraph newPG = editor.InsertParagraph(pg, ref caretCol);
+						if(newPG != null)
 						{
-							int index = line.Segments.ToList().IndexOf(segment);
-							List<Block> deleteSeg = new List<Block>();
-							for (int i = 0; i < line.Segments.Length; i++)
+							int index = pg.Blocks.ToList().IndexOf(segment);
+							List<Block> lstDelBlock = new List<Block>();
+							for (int i = 0; i < pg.Blocks.Length; i++)
 							{
-								if (i > index && line.Segments[i] != segment)
+								if (i > index && pg.Blocks[i] != segment)
 								{
-									deleteSeg.Add(line.Segments[i]);
+									lstDelBlock.Add(pg.Blocks[i]);
 								}
 							}
-							line.Remove(deleteSeg);
-							line.Remove(new List<Block>(){segment});
+							pg.Remove(lstDelBlock);
+							pg.Remove(new List<Block>(){segment});
 							Block segBefore = new Block(BlockType.Text,spitList[0]);
-							line.AddSegment(segBefore);
+							pg.AddSegment(segBefore);
 							Block segAfter = new Block(BlockType.Text,spitList[1]);
-							lineNew.AddSegment(segAfter);
-							lineNew.AddSegment(deleteSeg);
+							newPG.AddSegment(segAfter);
+							newPG.AddSegment(lstDelBlock.ToArray());
 							editor.Caret.Position = new TextLocation(caretCol, editor.Caret.Line + 1);
 							editor.Caret.UpdateCaretPosition();
 						}
 					}
 				}
-				else if (line.Segments.Length == 0 || isAllSpace)
+				else if (pg.Blocks.Length == 0 || isAllSpace)
 				{
 					int caretCol = 0;
-					Line lineNew = editor.InsertLine(line, ref caretCol);
+					Paragraph newPG = editor.InsertParagraph(pg, ref caretCol);
 					editor.Caret.Position = new TextLocation(caretCol, editor.Caret.Line + 1);
 					editor.Caret.UpdateCaretPosition();
 				}
